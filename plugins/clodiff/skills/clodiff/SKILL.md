@@ -7,7 +7,22 @@ description: Use when discussing, explaining, or reviewing code with the user �
 
 clodiff is a local code viewer running in the user's browser. When it's active you have a shared visual context — you can point to specific lines, highlight code while explaining it, and leave inline annotations that persist in the session.
 
-**Always check on session start.** If `.review/session.json` exists, clodiff is running.
+## Bootstrap
+
+Check for `.review/session.json` — if it doesn't exist, clodiff isn't running. Start it:
+
+```bash
+# Ensure bun is installed
+which bun || curl -fsSL https://bun.sh/install | bash
+
+# Start clodiff from the repo root (pick the right mode)
+bunx clodiff                        # browse mode — no diff, just the repo
+bunx clodiff --base main            # diff against a branch
+bunx clodiff --from HEAD~3 --to HEAD  # specific commit range
+git diff HEAD~1 | bunx clodiff --stdin  # pipe a diff
+```
+
+clodiff opens a browser window and writes `.review/session.json`. Read that file to get the port before making any API calls.
 
 ## Detect and connect
 
