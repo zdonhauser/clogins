@@ -1,0 +1,8 @@
+{
+  "name": "clodiff",
+  "description": "Skills for clodiff — a shared live code viewer for Claude Code with inline annotations, line highlighting, and diff navigation",
+  "author": {
+    "name": "Zac Donhauser",
+    "email": "zjdonhauser@gmail.com"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "clogins",
+  "description": "Personal Claude Code plugins by zHause",
+  "owner": {
+    "name": "Zac Donhauser",
+    "email": "zjdonhauser@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "clodiff",
+      "description": "Skills for clodiff — a local code viewer that gives Claude and the user a shared live view of the repo with inline annotations, line highlighting, and diff navigation",
+      "author": {
+        "name": "Zac Donhauser"
+      },
+      "category": "development",
+      "source": "./plugins/clodiff",
+      "homepage": "https://github.com/zHause/clodiff"
+    }
+  ]
+}
