@@ -112,6 +112,37 @@ After reviewing all files, send a brief summary in chat:
 - Counts by severity (X errors, Y warnings, Z suggestions)
 - Your overall recommendation (approve / request changes / LGTM with nits)
 
+## Staying alive for replies
+
+After finishing the review and sending your summary, start a persistent watch on `.review/replies.json` using the `Monitor` tool so you can respond to user replies in the viewer without them needing to send a new chat message.
+
+Use the Monitor tool with this script as the command and `persistent: true`:
+
+```bash
+node -e "
+const fs = require('fs');
+const path = '.review/replies.json';
+let seen = new Set();
+try { JSON.parse(fs.readFileSync(path, 'utf8')).forEach(r => seen.add(r.id)); } catch {}
+setInterval(() => {
+  try {
+    const replies = JSON.parse(fs.readFileSync(path, 'utf8'));
+    replies.filter(r => !seen.has(r.id)).forEach(r => {
+      seen.add(r.id);
+      process.stdout.write(JSON.stringify({ comment_id: r.comment_id, body: r.body, id: r.id }) + '\n');
+    });
+  } catch {}
+}, 1500);
+"
+```
+
+When a notification arrives, the JSON line contains:
+- `comment_id` — the annotation the user replied to
+- `body` — what they said
+- `id` — the reply ID (already seen, won't re-fire)
+
+Respond by finding the original annotation in the session (match by `id` in `session.reviews[*].comments`), then either leave a follow-up annotation on the same line or reply in chat. Stop the monitor when the user ends the review session.
+
 ## Extending this workflow
 
 Any tool that produces code findings can emit them to clodiff using the same pattern:
