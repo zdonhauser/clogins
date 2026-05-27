@@ -2,10 +2,18 @@
   "description": "clodiff session hooks — inject annotation replies and load session state",
   "hooks": {
     "UserPromptSubmit": [
-      { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-replies.js\"", "timeout": 10 }
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-replies.js\"", "timeout": 10 }
+        ]
+      }
     ],
     "SessionStart": [
-      { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-session.js\"", "timeout": 10 }
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-session.js\"", "timeout": 10 }
+        ]
+      }
     ]
   }
 }
