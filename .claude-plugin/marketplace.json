@@ -9,6 +9,7 @@
   "plugins": [
     {
       "name": "clodiff",
+      "version": "1.1.0",
       "description": "Skills for clodiff — a local code viewer that gives Claude and the user a shared live view of the repo with inline annotations, line highlighting, and diff navigation",
       "author": {
         "name": "Zac Donhauser"
