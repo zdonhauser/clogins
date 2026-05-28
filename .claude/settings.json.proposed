@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '\nFILE=\"${CLAUDE_TOOL_INPUT_FILE_PATH:-}\"\nif echo \"$FILE\" | grep -qE \"plugins/[^/]+/(skills|hooks)/\"; then\n  PLUGIN=$(echo \"$FILE\" | sed \"s|.*/plugins/\\([^/]*\\)/.*|\\1|\")\n  PLUGIN_JSON=\"$(git rev-parse --show-toplevel 2>/dev/null)/plugins/$PLUGIN/.claude-plugin/plugin.json\"\n  CURRENT=$(bun -e \"try{const p=JSON.parse(require(\\\"fs\\\").readFileSync(\\\"$PLUGIN_JSON\\\",\\\"utf8\\\"));console.log(p.version||\\\"none\\\")}catch{console.log(\\\"missing\\\")}\" 2>/dev/null)\n  echo \"[clogins] Edited $PLUGIN plugin source (version: $CURRENT). Bump version in plugins/$PLUGIN/.claude-plugin/plugin.json before committing.\"\nfi\n'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
