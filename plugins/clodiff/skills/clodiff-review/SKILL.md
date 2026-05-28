@@ -9,14 +9,35 @@ This skill gives you a built-in review workflow that integrates with clodiff's l
 
 ## Before you start
 
-Check that clodiff is running and read the session:
+Check for `.review/session.json`. If it doesn't exist, bootstrap clodiff — start it, wait for it to be ready, then proceed:
+
+```bash
+# Check if already running
+if [ ! -f .review/session.json ]; then
+  # Detect default branch (origin HEAD → fallback to main)
+  DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||')
+  DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
+
+  # Start clodiff in the background
+  nohup bunx clodiff --base "$DEFAULT_BRANCH" > /tmp/clodiff-review.log 2>&1 &
+
+  # Wait up to 20s for the session file to appear
+  for i in $(seq 1 40); do
+    sleep 0.5
+    [ -f .review/session.json ] && break
+  done
+
+  if [ ! -f .review/session.json ]; then
+    echo "clodiff failed to start. Check /tmp/clodiff-review.log or run 'bunx clodiff' manually."
+    exit 1
+  fi
+fi
+```
+
+Then read the session:
 
 ```javascript
 import { existsSync, readFileSync } from "fs"
-const active = existsSync(".review/session.json")
-if (!active) {
-  // Fall back to a plain text review — no viewer available
-}
 const session = JSON.parse(readFileSync(".review/session.json", "utf-8"))
 const port = session.port
 ```
