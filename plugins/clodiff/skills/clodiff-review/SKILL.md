@@ -140,14 +140,14 @@ After finishing the review and sending your summary, start a persistent watch on
 Use the Monitor tool with this script as the command and `persistent: true`:
 
 ```bash
-node -e "
+bun -e "
 const fs = require('fs');
-const path = '.review/replies.json';
+const repliesPath = '.review/replies.json';
 let seen = new Set();
-try { JSON.parse(fs.readFileSync(path, 'utf8')).forEach(r => seen.add(r.id)); } catch {}
+try { JSON.parse(fs.readFileSync(repliesPath, 'utf8')).forEach(r => seen.add(r.id)); } catch {}
 setInterval(() => {
   try {
-    const replies = JSON.parse(fs.readFileSync(path, 'utf8'));
+    const replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
     replies.filter(r => !seen.has(r.id)).forEach(r => {
       seen.add(r.id);
       process.stdout.write(JSON.stringify({ comment_id: r.comment_id, body: r.body, id: r.id }) + '\n');
