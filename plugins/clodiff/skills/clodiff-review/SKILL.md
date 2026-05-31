@@ -162,7 +162,33 @@ When a notification arrives, the JSON line contains:
 - `body` — what they said
 - `id` — the reply ID (already seen, won't re-fire)
 
-Respond by finding the original annotation in the session (match by `id` in `session.reviews[*].comments`), then either leave a follow-up annotation on the same line or reply in chat. Stop the monitor when the user ends the review session.
+**Responding in-thread:** When a reply arrives, write your response directly into the same thread using `POST /reply` with `source: "claude-code"`. This makes your response appear as a styled mini-card inside the comment thread in the viewer, with a Fix It button if appropriate.
+
+```javascript
+const session = JSON.parse(readFileSync(".review/session.json", "utf-8"))
+const port = session.port
+
+async function replyToComment(commentId, body, severity) {
+  await fetch(`http://localhost:${port}/reply`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      comment_id: commentId,
+      body,
+      source: "claude-code",
+      severity, // optional: "error" | "warning" | "suggestion" | "note"
+    }),
+  })
+}
+```
+
+**When to use in-thread reply vs new annotation:**
+- User asks a question about a finding → reply in the same thread
+- User wants a different approach → reply with the updated suggestion (they can click Fix It in the thread)
+- User's reply reveals a new unrelated issue → use `annotate()` to add a new annotation on the relevant line
+- User says "Fix It" or "Rejected" → no need to respond; the action was already recorded
+
+Stop the monitor when the user ends the review session.
 
 ## Extending this workflow
 
