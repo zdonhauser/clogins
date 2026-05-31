@@ -1,6 +1,6 @@
 ---
 name: clodiff-review
-description: Use when the user asks you to review a PR, diff, or set of changes — if clodiff is active, perform the review inline using clodiff annotations so findings are visible in the code viewer alongside the relevant lines
+description: Use whenever the user asks you to review a pull request, a diff, or a set of changes — even if they don't mention clodiff by name. This skill starts clodiff (or reuses a running session) and performs the review inline as annotations pinned to the relevant lines, then stages them as a GitHub PR review or applies them as local fixes. Prefer it over a plain prose review so findings land in the code viewer next to the code.
 ---
 
 # Code Review with clodiff
@@ -12,30 +12,33 @@ This skill covers two modes:
 
 Detect the mode at startup and bootstrap clodiff accordingly.
 
+clodiff keys off the branch you're checked out on. To review a colleague's PR,
+check out their branch first (`gh pr checkout <number>`) and then bootstrap — that
+way "the current branch's PR" is theirs, and you won't accidentally review a branch
+you aren't on.
+
 ---
 
 ## Step 1: Detect mode and bootstrap clodiff
 
 ```bash
-# Check if clodiff is already running
+# Already running? Reuse the live session.
 if [ -f .review/session.json ]; then
   echo "clodiff already running"
 else
-  # Detect whether the current branch has an open PR
-  PR_JSON=$(gh pr view --json number,baseRefName,headRefSha 2>/dev/null)
-
-  if [ -n "$PR_JSON" ]; then
-    # ── PR review mode ──────────────────────────────────────────────────────
-    PR_NUMBER=$(echo "$PR_JSON" | bun -e "process.stdout.write(String(JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')).number))")
-    BASE=$(echo "$PR_JSON" | bun -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')).baseRefName)")
-    BRANCH=$(git rev-parse --abbrev-ref HEAD)
-
-    nohup bunx clodiff --from "$BASE" --to "$BRANCH" --pr "$PR_NUMBER" > /tmp/clodiff-review.log 2>&1 &
+  # One question decides the mode: does the current branch have an open PR?
+  if gh pr view --json number >/dev/null 2>&1; then
+    # ── PR review mode ──
+    # Bare `bunx clodiff` auto-detects the PR for the branch you're on: it loads the
+    # PR metadata (title, author, CI status), diffs base..head, and imports existing
+    # GitHub review threads so you can see what others already said. Do NOT pass
+    # --from/--to/--pr here — any diff-source flag turns off PR auto-detection, so
+    # you'd lose the PR header bar and the thread import.
+    nohup bunx clodiff > /tmp/clodiff-review.log 2>&1 &
   else
-    # ── Local branch review mode ────────────────────────────────────────────
+    # ── Local branch review mode ──
     DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||')
     DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
-
     nohup bunx clodiff --base "$DEFAULT_BRANCH" > /tmp/clodiff-review.log 2>&1 &
   fi
 
@@ -82,20 +85,18 @@ const src = await fetch(`http://localhost:${port}/file?path=src/server.ts`).then
 
 ## Step 3: Annotate
 
-The `commit_id` on each annotation must match the diff head — the PR branch head in PR mode, or `HEAD` in local mode.
+Every annotation needs a `commit_id`, and it has to match the commit the diff is
+against or GitHub rejects the whole review with a 422. clodiff already resolved this
+for you: `session.head_commit` is that commit — the PR branch head in PR mode, or
+local `HEAD` in local mode. Use it directly. Don't run `git rev-parse HEAD` yourself:
+in PR mode you may be on a different branch, or the PR branch may be ahead of your
+local HEAD, and a mismatched commit_id is the single most common cause of a failed
+submit.
 
 ```javascript
 import { readFileSync, writeFileSync } from "fs"
-import { spawnSync } from "child_process"
 
-// In PR mode: git rev-parse <branch>  (NOT HEAD — you may be on main)
-// In local mode: git rev-parse HEAD
 const session = JSON.parse(readFileSync(sessionPath, "utf-8"))
-const commitRef = session.pr_number
-  ? spawnSync("git", ["rev-parse", session.head_commit.slice(0, 7)], { encoding: "utf-8" }).stdout.trim() || session.head_commit
-  : spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf-8" }).stdout.trim()
-
-// Use session.head_commit directly — it was set to the PR branch head by --to
 const commit = session.head_commit
 
 async function annotate(port, sessionPath, { path, line, lineContent, severity, body }) {
@@ -128,6 +129,17 @@ Work file by file:
 3. **Highlight lines** you're examining as you explain them
 4. **Leave annotations** for any findings
 
+Highlight *before* you explain a line so the user's eye is already there — the glow
+fades on its own and the viewer scrolls to follow:
+
+```javascript
+await fetch(`http://localhost:${port}/_ws_broadcast`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ type: "highlight", path, line, duration: 4000, scroll: true }),
+})
+```
+
 ---
 
 ## Severity guide
@@ -155,6 +167,10 @@ await fetch(`http://localhost:${port}/review/event`, {
   body: JSON.stringify({ event: "REQUEST_CHANGES" }),  // or APPROVE or COMMENT
 })
 ```
+
+In PR mode this pre-selects the decision in the Submit Review modal — the user can
+still change it before submitting, so treat it as your recommendation, not the final
+word. In local mode it just records your overall call on the session.
 
 > **Note:** GitHub does not allow you to APPROVE your own PR. Use `COMMENT` when reviewing your own branch.
 
