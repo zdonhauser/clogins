@@ -231,10 +231,16 @@ code. In local mode it just records the overall call on the session.
 
 ## Step 4: Submit
 
-**PR mode** — tell the user to click **Submit Review** in the viewer header. The modal lets
-them confirm the decision, write/edit a summary body, see staged counts by severity, and
-submit — which posts the full review to GitHub. Do **not** call `/push` automatically; the
-user submits via the modal.
+**PR mode, reviewing someone else's PR** — tell the user to click **Submit Review** in the
+header. The modal lets them confirm the decision (Approve / Request Changes / Comment),
+write a summary, see staged counts, and submit — which posts the full review to GitHub. Do
+**not** call `/push` automatically; the user submits via the modal.
+
+**PR mode, triaging your own PR** (`session.pr_meta.viewer_is_author`) — you can't review
+your own PR, so the same button becomes **"Triage your PR"**: it posts your staged replies,
+resolves the threads you marked, and optionally re-requests the reviewers who commented —
+*without* submitting a review. So the author-side loop is: reply / Fix It (apply the change)
+/ resolve, then click the button to flush it all back to GitHub and ask for another look.
 
 **Local mode** — Fix It / Reject on each annotation apply fixes to the working tree. There's
 no submit step unless the user explicitly wants to push the annotations to a GitHub PR.
