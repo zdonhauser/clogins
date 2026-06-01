@@ -42,6 +42,12 @@ clodiff sessions at once — always read the actual port from the session file.
 clodiff opens a browser window and writes `session.json` into the git dir. Read that file
 to get the port before making any API calls.
 
+**Hot reload — don't relaunch to refresh.** A running clodiff watches the working tree
+(and HEAD) and pushes the updated diff to the open viewer automatically whenever you edit
+files or commit. So after you make changes, do **nothing** — the tab already shows them.
+Re-running `clodiff` while one is live just reuses the existing session (it won't open a
+second window). Only start clodiff when there isn't one running.
+
 ## Detect and connect
 
 ```javascript
