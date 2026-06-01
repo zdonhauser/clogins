@@ -12,18 +12,23 @@ clodiff is a local code viewer running in the user's browser. When it's active y
 Check for `.review/session.json` — if it doesn't exist, clodiff isn't running. Start it:
 
 ```bash
-# Ensure bun is installed
-which bun || curl -fsSL https://bun.sh/install | bash
+# Ensure bun + clodiff are installed (install the package and run the binary —
+# bunx's download-and-execute is blocked in some sandboxes)
+which bun >/dev/null 2>&1 || curl -fsSL https://bun.sh/install | bash
+export PATH="$HOME/.bun/bin:$PATH"
+# If bun still isn't on PATH, the auto-install was blocked (sandbox) — tell the
+# user to install it manually (curl -fsSL https://bun.sh/install | bash) and stop.
+which clodiff >/dev/null 2>&1 || bun add -g clodiff
 
 # Start clodiff from the repo root (pick the right mode)
-bunx clodiff                              # browse mode — no diff, just the repo
-bunx clodiff --base main                  # diff against a branch
-bunx clodiff --from HEAD~3 --to HEAD      # specific commit range
-git diff HEAD~1 | bunx clodiff --stdin    # pipe a diff from any source
-bunx clodiff --pr 42                      # PR review mode (explicit number)
+clodiff                              # browse mode — no diff, just the repo
+clodiff --base main                  # diff against a branch
+clodiff --from HEAD~3 --to HEAD      # specific commit range
+git diff HEAD~1 | clodiff --stdin    # pipe a diff from any source
+clodiff --pr 42                      # PR review mode (explicit number)
 # On a branch with an open PR, just run:
-bunx clodiff                              # auto-detects the PR, fetches diff,
-                                          # imports existing review threads
+clodiff                              # auto-detects the PR, fetches diff,
+                                     # imports existing review threads + conversation
 ```
 
 clodiff opens a browser window and writes `.review/session.json`. Read that file to get the port before making any API calls.

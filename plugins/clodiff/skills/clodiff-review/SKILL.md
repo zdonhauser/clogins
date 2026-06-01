@@ -47,20 +47,32 @@ branch you aren't on.
 if [ -f .review/session.json ]; then
   echo "clodiff already running"
 else
+  # Ensure bun + clodiff are installed, then run the installed binary. We install
+  # the package rather than using `bunx` because bunx's download-and-execute is
+  # blocked in some sandboxes; a plain global install + run is portable.
+  which bun >/dev/null 2>&1 || curl -fsSL https://bun.sh/install | bash
+  export PATH="$HOME/.bun/bin:$PATH"
+  if ! which bun >/dev/null 2>&1; then
+    echo "clodiff needs bun, and the auto-install didn't take (often a sandboxed network)."
+    echo "Install it manually: curl -fsSL https://bun.sh/install | bash  (then restart your shell), or see https://bun.sh"
+    exit 1
+  fi
+  which clodiff >/dev/null 2>&1 || bun add -g clodiff
+
   # One question decides the mode: does the current branch have an open PR?
   if gh pr view --json number >/dev/null 2>&1; then
     # ── PR mode ──
-    # Bare `bunx clodiff` auto-detects the PR for the branch you're on: it loads the
-    # PR metadata (title, author, CI status), diffs base..head, and imports existing
-    # GitHub review threads so you can see what others already said. Do NOT pass
-    # --from/--to/--pr here — any diff-source flag turns off PR auto-detection, so
-    # you'd lose the PR header bar and the thread import.
-    nohup bunx clodiff > /tmp/clodiff-review.log 2>&1 &
+    # Bare `clodiff` auto-detects the PR for the branch you're on: it loads the PR
+    # metadata (title, author, CI status), diffs base..head, and imports existing
+    # GitHub review threads + the conversation so you can see what others already
+    # said. Do NOT pass --from/--to/--pr here — any diff-source flag turns off PR
+    # auto-detection, so you'd lose the PR header bar and the import.
+    nohup clodiff > /tmp/clodiff-review.log 2>&1 &
   else
     # ── Local mode ──
     DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||')
     DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
-    nohup bunx clodiff --base "$DEFAULT_BRANCH" > /tmp/clodiff-review.log 2>&1 &
+    nohup clodiff --base "$DEFAULT_BRANCH" > /tmp/clodiff-review.log 2>&1 &
   fi
 
   # Wait up to 20s for the session file to appear
