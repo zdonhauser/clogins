@@ -286,7 +286,17 @@ async function replyToComment(commentId, body, severity) {
 - Question about a finding → reply in the same thread
 - User wants a different approach → reply with the updated suggestion (they click Fix It)
 - Reply reveals a new, unrelated issue → `annotate()` on the relevant line
-- "Fix It" or "Rejected" → already recorded; no response needed
+- **"Fix It"** → the user accepted the suggestion: **apply it to the code now.** Edit the
+  file to make the change you proposed in that comment, then reply in-thread confirming
+  what you changed. (The server already marked the comment resolved and staged the
+  GitHub thread-resolve; your job is the actual code edit.) The body of the notification
+  is literally `Fix It`, and `comment_id` tells you which finding to act on.
+- **"Rejected"** → the user declined: leave the code as-is, no edit. A brief acknowledgement
+  is optional; the comment is already resolved.
+
+> Note on PR-review-of-others: "Fix It" only makes sense when you can edit the code (your
+> own branch / local review). When reviewing *someone else's* PR you're staging review
+> comments, not changing their code, so Fix It won't appear as an apply-the-change action.
 
 Stop the monitor when the user ends the review.
 
