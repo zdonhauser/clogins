@@ -7,9 +7,18 @@ description: Use when discussing, explaining, or reviewing code with the user �
 
 clodiff is a local code viewer running in the user's browser. When it's active you have a shared visual context — you can point to specific lines, highlight code while explaining it, and leave inline annotations that persist in the session. Annotations support full GitHub-flavored markdown.
 
+## Where the session lives
+
+clodiff keeps its state under the repo's git dir — `"$(git rev-parse --absolute-git-dir)/clodiff/"`
+(e.g. `.git/clodiff/session.json`), not a tracked `.review/` folder. Git never tracks
+anything inside the git dir, so there's nothing to `.gitignore` and it never shows up in a
+diff. `--absolute-git-dir` resolves per-worktree, so each worktree has its own session.
+Resolve that directory once and reuse it for `session.json` and `replies.json`.
+
 ## Bootstrap
 
-Check for `.review/session.json` — if it doesn't exist, clodiff isn't running. Start it:
+Check whether clodiff is running by looking for `session.json` in that directory. Start it
+if absent:
 
 ```bash
 # Ensure bun + clodiff are installed (install the package and run the binary —
@@ -33,18 +42,23 @@ clodiff --pr 42                      # PR review mode (explicit number)
 ```
 
 The port defaults to 7777 and **auto-increments** if taken, so you can run several
-clodiff sessions at once — always read the actual port from `.review/session.json`.
+clodiff sessions at once — always read the actual port from the session file.
 
-clodiff opens a browser window and writes `.review/session.json`. Read that file to get the port before making any API calls.
+clodiff opens a browser window and writes `session.json` into the git dir. Read that file
+to get the port before making any API calls.
 
 ## Detect and connect
 
 ```javascript
 import { existsSync, readFileSync } from "fs"
+import { execSync } from "child_process"
 
-const active = existsSync(".review/session.json")
-if (active) {
-  const session = JSON.parse(readFileSync(".review/session.json", "utf-8"))
+// Resolve clodiff's session dir (under the git dir — see "Where the session lives")
+const reviewDir = execSync("git rev-parse --absolute-git-dir").toString().trim() + "/clodiff"
+const sessionPath = `${reviewDir}/session.json`
+
+if (existsSync(sessionPath)) {
+  const session = JSON.parse(readFileSync(sessionPath, "utf-8"))
   const port = session.port  // actual port — may not be 7777 if it auto-incremented
 }
 ```
@@ -113,9 +127,10 @@ Annotations appear as inline comment cards supporting **full GitHub-flavored mar
 
 ```javascript
 import { readFileSync, writeFileSync } from "fs"
-import { spawnSync } from "child_process"
+import { execSync } from "child_process"
 
-const sessionPath = ".review/session.json"
+const reviewDir = execSync("git rev-parse --absolute-git-dir").toString().trim() + "/clodiff"
+const sessionPath = `${reviewDir}/session.json`
 const session = JSON.parse(readFileSync(sessionPath, "utf-8"))
 const port = session.port
 const commit = session.head_commit  // use session.head_commit, not git rev-parse HEAD

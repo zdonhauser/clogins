@@ -1,8 +1,24 @@
 #!/usr/bin/env node
 import fs from "fs"
 import path from "path"
+import os from "os"
+import crypto from "crypto"
+import { execSync } from "child_process"
 
-const repliesPath = path.join(process.cwd(), ".review", "replies.json")
+// clodiff stores its session under <git-dir>/clodiff (invisible to git), falling
+// back to a temp dir keyed by cwd when not in a git repo. Mirror that resolution.
+function reviewDir() {
+  try {
+    const gitDir = execSync("git rev-parse --absolute-git-dir", {
+      cwd: process.cwd(), stdio: ["ignore", "pipe", "ignore"],
+    }).toString().trim()
+    if (gitDir) return path.join(gitDir, "clodiff")
+  } catch { /* not a git repo */ }
+  const hash = crypto.createHash("sha1").update(process.cwd()).digest("hex").slice(0, 12)
+  return path.join(os.tmpdir(), "clodiff", hash)
+}
+
+const repliesPath = path.join(reviewDir(), "replies.json")
 
 if (!fs.existsSync(repliesPath)) {
   process.exit(0)

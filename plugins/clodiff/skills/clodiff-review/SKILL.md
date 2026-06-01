@@ -42,9 +42,15 @@ you're checked out on. To review a colleague's PR, check out their branch first
 (`gh pr checkout <number>`) so "the current branch's PR" is theirs and you don't review a
 branch you aren't on.
 
+clodiff keeps its state under the repo's git dir (`<git-dir>/clodiff/`, e.g.
+`.git/clodiff/session.json`) — never a tracked `.review/` folder, so nothing to gitignore.
+Resolve it once and reuse it.
+
 ```bash
+SESSION="$(git rev-parse --absolute-git-dir 2>/dev/null)/clodiff/session.json"
+
 # Already running? Reuse the live session.
-if [ -f .review/session.json ]; then
+if [ -f "$SESSION" ]; then
   echo "clodiff already running"
 else
   # Ensure bun + clodiff are installed, then run the installed binary. We install
@@ -78,10 +84,10 @@ else
   # Wait up to 20s for the session file to appear
   for i in $(seq 1 40); do
     sleep 0.5
-    [ -f .review/session.json ] && break
+    [ -f "$SESSION" ] && break
   done
 
-  if [ ! -f .review/session.json ]; then
+  if [ ! -f "$SESSION" ]; then
     echo "clodiff failed to start. Check /tmp/clodiff-review.log"
     exit 1
   fi
@@ -92,7 +98,9 @@ Read the session and note the mode — it changes how findings get submitted at 
 
 ```javascript
 import { readFileSync } from "fs"
-const sessionPath = ".review/session.json"
+import { execSync } from "child_process"
+const reviewDir = execSync("git rev-parse --absolute-git-dir").toString().trim() + "/clodiff"
+const sessionPath = `${reviewDir}/session.json`
 const session = JSON.parse(readFileSync(sessionPath, "utf-8"))
 const port = session.port
 const isPRReview = session.pr_number != null
@@ -266,13 +274,15 @@ After the findings are on screen, send a brief summary in chat:
 
 ## Staying alive for replies
 
-After the summary, start a persistent monitor on `.review/replies.json` using the `Monitor`
-tool so you can answer replies in the viewer without the user sending a new chat message.
+After the summary, start a persistent monitor on the session's `replies.json` (in the git
+dir — see Step 1) using the `Monitor` tool so you can answer replies in the viewer without
+the user sending a new chat message.
 
 ```bash
 bun -e "
 const fs = require('fs');
-const repliesPath = '.review/replies.json';
+const { execSync } = require('child_process');
+const repliesPath = execSync('git rev-parse --absolute-git-dir').toString().trim() + '/clodiff/replies.json';
 let seen = new Set();
 try { JSON.parse(fs.readFileSync(repliesPath, 'utf8')).forEach(r => seen.add(r.id)); } catch {}
 setInterval(() => {
