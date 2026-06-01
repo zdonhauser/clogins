@@ -21,15 +21,19 @@ export PATH="$HOME/.bun/bin:$PATH"
 which clodiff >/dev/null 2>&1 || bun add -g clodiff
 
 # Start clodiff from the repo root (pick the right mode)
-clodiff                              # browse mode — no diff, just the repo
-clodiff --base main                  # diff against a branch
+clodiff                              # DEFAULT: uncommitted changes vs the last commit
+                                     # (tracked + untracked) — the common case.
+                                     # On a branch with an open PR, auto-detects the PR
+                                     # instead and imports its threads + conversation.
+clodiff --working                    # force uncommitted-vs-HEAD even on a PR branch
+clodiff --base main                  # working tree vs a branch
 clodiff --from HEAD~3 --to HEAD      # specific commit range
 git diff HEAD~1 | clodiff --stdin    # pipe a diff from any source
 clodiff --pr 42                      # PR review mode (explicit number)
-# On a branch with an open PR, just run:
-clodiff                              # auto-detects the PR, fetches diff,
-                                     # imports existing review threads + conversation
 ```
+
+The port defaults to 7777 and **auto-increments** if taken, so you can run several
+clodiff sessions at once — always read the actual port from `.review/session.json`.
 
 clodiff opens a browser window and writes `.review/session.json`. Read that file to get the port before making any API calls.
 
@@ -41,9 +45,37 @@ import { existsSync, readFileSync } from "fs"
 const active = existsSync(".review/session.json")
 if (active) {
   const session = JSON.parse(readFileSync(".review/session.json", "utf-8"))
-  const port = session.port  // e.g. 7777
+  const port = session.port  // actual port — may not be 7777 if it auto-incremented
 }
 ```
+
+## Change the diff range
+
+When the user says "let's look at X instead", repoint the viewer at a different diff
+with `POST /rediff`. The diff is two endpoints — `from` (base) and `to` (compare). Use
+the literal **`"WORKING"`** for the working tree (uncommitted changes); any other value
+is a git ref (branch, tag, `HEAD`, or a commit SHA).
+
+```javascript
+await fetch(`http://localhost:${port}/rediff`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ from: "HEAD", to: "WORKING" }),  // uncommitted vs last commit
+})
+```
+
+Common ranges — map what the user asks for onto a `{ from, to }`:
+
+| User wants | `{ from, to }` |
+|---|---|
+| my uncommitted changes (vs last commit) | `{ from: "HEAD", to: "WORKING" }` |
+| my uncommitted changes vs `main` | `{ from: "main", to: "WORKING" }` |
+| my branch vs `main` (committed only) | `{ from: "main", to: "HEAD" }` |
+| the last commit | `{ from: "HEAD~1", to: "HEAD" }` |
+| a specific commit range | `{ from: "<sha>", to: "<sha>" }` |
+
+So you can just be told "show me my changes since main" and translate it to a rediff —
+no restart needed. `WORKING` mode includes untracked files too.
 
 ## Scroll to a line
 
