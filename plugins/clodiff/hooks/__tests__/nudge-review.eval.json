@@ -1,0 +1,31 @@
+[
+  {"prompt": "can you review the PR on my current branch? it's the rate-limiter refactor", "inject": true, "note": "generic review"},
+  {"prompt": "review my uncommitted changes against main before i commit", "inject": true, "note": "local review"},
+  {"prompt": "go through sarah's pr #418 with me, i already checked out her branch", "inject": true, "note": "walk a PR"},
+  {"prompt": "run ultrareview on this branch and let's go through what it finds", "inject": true, "note": "named engine: ultrareview"},
+  {"prompt": "do a security review of the payment changes in src/billing/ and flag anything risky", "inject": true, "note": "named engine: security review"},
+  {"prompt": "i want a code review of the diff between develop and my feature branch", "inject": true, "note": "code review"},
+  {"prompt": "i ran eslint and it spat out like 12 warnings across the checkout flow, walk through them", "inject": true, "note": "linter findings exist"},
+  {"prompt": "look over these changes and leave comments on anything sketchy", "inject": true, "note": "look over + leave comments"},
+  {"prompt": "is this PR good to merge? give it a proper review", "inject": true, "note": "merge-readiness review"},
+  {"prompt": "i just rebased onto main and want a second pair of eyes, walk the diff and flag any bugs", "inject": true, "note": "second pair of eyes"},
+
+  {"prompt": "give the billing module a once-over before i ship it", "inject": true, "note": "generalization: once-over"},
+  {"prompt": "any red flags in this changeset?", "inject": true, "note": "generalization: red flags"},
+  {"prompt": "can you sanity check the auth changes i just pushed", "inject": true, "note": "generalization: sanity check"},
+
+  {"prompt": "what does the deriveChecksStatus function in github.ts actually do?", "inject": false, "note": "explain"},
+  {"prompt": "summarize the changes in PR #418 for the standup channel", "inject": false, "note": "summarize"},
+  {"prompt": "the test in server.test.ts is failing after my change, can you fix it", "inject": false, "note": "fix test"},
+  {"prompt": "rename headSha to headRefOid everywhere it appears in src/", "inject": false, "note": "rename"},
+  {"prompt": "git diff main and show me which files changed, i just want the list", "inject": false, "note": "list diff"},
+  {"prompt": "write unit tests for the new annotate() helper i added", "inject": false, "note": "write tests"},
+  {"prompt": "explain how the monitor and replies.json work together end to end", "inject": false, "note": "explain"},
+  {"prompt": "open clodiff so i can scroll through my branch myself", "inject": false, "note": "browse, not review"},
+  {"prompt": "draft a PR description for the changes on this branch", "inject": false, "note": "write PR description"},
+  {"prompt": "revert the last commit, i don't like the approach", "inject": false, "note": "git op"},
+
+  {"prompt": "what's the test coverage on the billing module?", "inject": false, "note": "generalization: coverage question"},
+  {"prompt": "bump the eslint version in package.json", "inject": false, "note": "generalization: eslint but not a lint run"},
+  {"prompt": "merge this PR for me", "inject": false, "note": "generalization: merge action, not review"}
+]
