@@ -21,13 +21,8 @@ Check whether clodiff is running by looking for `session.json` in that directory
 if absent:
 
 ```bash
-# Ensure bun + clodiff are installed (install the package and run the binary —
-# bunx's download-and-execute is blocked in some sandboxes)
-which bun >/dev/null 2>&1 || curl -fsSL https://bun.sh/install | bash
-export PATH="$HOME/.bun/bin:$PATH"
-# If bun still isn't on PATH, the auto-install was blocked (sandbox) — tell the
-# user to install it manually (curl -fsSL https://bun.sh/install | bash) and stop.
-which clodiff >/dev/null 2>&1 || bun add -g clodiff
+# Ensure clodiff is installed (runs on Node >=22.18 — no build step)
+which clodiff >/dev/null 2>&1 || npm install -g clodiff
 
 # Start clodiff from the repo root (pick the right mode)
 clodiff                              # DEFAULT: uncommitted changes vs the last commit

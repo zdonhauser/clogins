@@ -41,7 +41,7 @@ plugins/<name>/
 ## Hook Scripts
 
 - Always reference plugin-relative paths via `${CLAUDE_PLUGIN_ROOT}` in `hooks.json` commands
-- Use `bun` (not `node`) for hook scripts — clodiff and this repo assume Bun is available
+- Use `node` for hook scripts — clodiff runs on Node now, so don't assume Bun is installed
 - Store any persistent cross-session state in `${CLAUDE_PLUGIN_DATA}` (survives plugin updates)
 
 ## Before Committing Changes

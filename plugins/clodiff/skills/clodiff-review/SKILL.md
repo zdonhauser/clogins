@@ -53,17 +53,14 @@ SESSION="$(git rev-parse --absolute-git-dir 2>/dev/null)/clodiff/session.json"
 if [ -f "$SESSION" ]; then
   echo "clodiff already running"
 else
-  # Ensure bun + clodiff are installed, then run the installed binary. We install
-  # the package rather than using `bunx` because bunx's download-and-execute is
-  # blocked in some sandboxes; a plain global install + run is portable.
-  which bun >/dev/null 2>&1 || curl -fsSL https://bun.sh/install | bash
-  export PATH="$HOME/.bun/bin:$PATH"
-  if ! which bun >/dev/null 2>&1; then
-    echo "clodiff needs bun, and the auto-install didn't take (often a sandboxed network)."
-    echo "Install it manually: curl -fsSL https://bun.sh/install | bash  (then restart your shell), or see https://bun.sh"
+  # Ensure clodiff is installed (it runs on Node >=22.18 — no build step). Install
+  # globally and run the `clodiff` binary.
+  which clodiff >/dev/null 2>&1 || npm install -g clodiff
+  if ! which clodiff >/dev/null 2>&1; then
+    echo "clodiff isn't installed and 'npm install -g clodiff' didn't put it on PATH."
+    echo "Install Node >=22.18 (https://nodejs.org), then: npm install -g clodiff"
     exit 1
   fi
-  which clodiff >/dev/null 2>&1 || bun add -g clodiff
 
   # One question decides the mode: does the current branch have an open PR?
   if gh pr view --json number >/dev/null 2>&1; then
@@ -279,7 +276,7 @@ dir — see Step 1) using the `Monitor` tool so you can answer replies in the vi
 the user sending a new chat message.
 
 ```bash
-bun -e "
+node -e "
 const fs = require('fs');
 const { execSync } = require('child_process');
 const repliesPath = execSync('git rev-parse --absolute-git-dir').toString().trim() + '/clodiff/replies.json';
