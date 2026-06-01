@@ -239,6 +239,11 @@ After the findings are on screen, send a brief summary in chat:
 - The recommendation (echo the engine's verdict when routing one)
 - In PR mode: remind the user to click **Submit Review** to post to GitHub
 
+> When you reply to an *imported* GitHub thread (a comment from another reviewer), that
+> reply is staged and posted to GitHub as a threaded reply on the next **Submit Review** —
+> along with any threads you resolved. This is how you triage your own PR's review comments
+> from inside clodiff: reply / Fix It / resolve, then submit to sync it all back.
+
 ---
 
 ## Staying alive for replies

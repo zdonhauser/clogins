@@ -1,6 +1,6 @@
 {
   "name": "clodiff",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "Skills for clodiff — a shared live code viewer for Claude Code with inline annotations, line highlighting, and diff navigation",
   "author": {
     "name": "Zac Donhauser",
