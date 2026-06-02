@@ -53,14 +53,19 @@ SESSION="$(git rev-parse --absolute-git-dir 2>/dev/null)/clodiff/session.json"
 if [ -f "$SESSION" ]; then
   echo "clodiff already running"
 else
-  # Ensure clodiff is installed (it runs on Node >=22.18 — no build step). Install
-  # globally and run the `clodiff` binary.
+  # Ensure clodiff is installed (Node >=20.11). Install globally and run the
+  # `clodiff` binary.
   which clodiff >/dev/null 2>&1 || npm install -g clodiff
   if ! which clodiff >/dev/null 2>&1; then
     echo "clodiff isn't installed and 'npm install -g clodiff' didn't put it on PATH."
-    echo "Install Node >=22.18 (https://nodejs.org), then: npm install -g clodiff"
+    echo "Install Node >=20.11 (https://nodejs.org), then: npm install -g clodiff"
     exit 1
   fi
+
+  # clodiff self-daemonizes: the command returns immediately and the server runs
+  # detached in its own session, so it SURVIVES this Claude session ending — no
+  # nohup/& needed, and no shared log. It logs to <git-dir>/clodiff/clodiff.log.
+  LOG="$(git rev-parse --absolute-git-dir 2>/dev/null)/clodiff/clodiff.log"
 
   # One question decides the mode: does the current branch have an open PR?
   if gh pr view --json number >/dev/null 2>&1; then
@@ -70,26 +75,30 @@ else
     # GitHub review threads + the conversation so you can see what others already
     # said. Do NOT pass --from/--to/--pr here — any diff-source flag turns off PR
     # auto-detection, so you'd lose the PR header bar and the import.
-    nohup clodiff > /tmp/clodiff-review.log 2>&1 &
+    clodiff
   else
     # ── Local mode ──
     DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||')
     DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
-    nohup clodiff --base "$DEFAULT_BRANCH" > /tmp/clodiff-review.log 2>&1 &
+    clodiff --base "$DEFAULT_BRANCH"
   fi
 
-  # Wait up to 20s for the session file to appear
+  # Wait up to 20s for the daemon to write its session file
   for i in $(seq 1 40); do
     sleep 0.5
     [ -f "$SESSION" ] && break
   done
 
   if [ ! -f "$SESSION" ]; then
-    echo "clodiff failed to start. Check /tmp/clodiff-review.log"
+    echo "clodiff failed to start. Check $LOG"
     exit 1
   fi
 fi
 ```
+
+> The server keeps running after this session ends — that's intentional, so the
+> viewer stays live when you come back. To shut it down, run **`clodiff --stop`**
+> in the repo (the review state is kept, so you can resume later).
 
 Read the session and note the mode — it changes how findings get submitted at the end:
 

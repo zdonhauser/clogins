@@ -21,7 +21,7 @@ Check whether clodiff is running by looking for `session.json` in that directory
 if absent:
 
 ```bash
-# Ensure clodiff is installed (runs on Node >=22.18 — no build step)
+# Ensure clodiff is installed (Node >=20.11)
 which clodiff >/dev/null 2>&1 || npm install -g clodiff
 
 # Start clodiff from the repo root (pick the right mode)
@@ -39,8 +39,12 @@ clodiff --pr 42                      # PR review mode (explicit number)
 The port defaults to 7777 and **auto-increments** if taken, so you can run several
 clodiff sessions at once — always read the actual port from the session file.
 
-clodiff opens a browser window and writes `session.json` into the git dir. Read that file
-to get the port before making any API calls.
+The `clodiff` command **returns immediately** — it self-daemonizes, running the server
+detached in its own session so it **survives this Claude session ending** (no `nohup`/`&`
+needed). It opens a browser window and writes `session.json` into the git dir; read that
+file to get the port before making any API calls. To shut a server down, run
+`clodiff --stop` in the repo (the review state is kept for resuming). It logs to
+`<git-dir>/clodiff/clodiff.log`.
 
 **Hot reload — don't relaunch to refresh.** A running clodiff watches the working tree
 (and HEAD) and pushes the updated diff to the open viewer automatically whenever you edit
