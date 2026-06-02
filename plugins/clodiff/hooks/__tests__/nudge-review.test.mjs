@@ -4,7 +4,7 @@
 import { readFileSync } from "fs"
 import { fileURLToPath } from "url"
 import { dirname, join } from "path"
-import { isReviewIntent } from "../nudge-review.js"
+import { isReviewIntent, buildMonitorNudge, FINDINGS_NUDGE } from "../nudge-review.js"
 
 const here = dirname(fileURLToPath(import.meta.url))
 const evals = JSON.parse(readFileSync(join(here, "nudge-review.eval.json"), "utf-8"))
@@ -32,4 +32,27 @@ if (fails.length) {
   }
   process.exit(1)
 }
+
+// ── Nudge content checks ──────────────────────────────────────────────────
+// The monitor nudge must be self-contained enough for Claude to act on it
+// without the clodiff-review skill being loaded (the whole point: it fires for
+// other review flows like review-team). So it needs the Monitor cue, the
+// replies path, and the in-thread reply mechanism.
+const monitor = buildMonitorNudge()
+const contentFails = []
+const must = (cond, label) => { if (!cond) contentFails.push(label) }
+must(monitor.includes("Monitor tool"), "monitor nudge names the Monitor tool")
+must(monitor.includes("persistent: true"), "monitor nudge sets persistent: true")
+must(monitor.includes("replies.json"), "monitor nudge points at replies.json")
+must(monitor.includes("/reply"), "monitor nudge explains how to respond (/reply)")
+must(monitor.includes("one"), "monitor nudge warns about a single watcher")
+must(FINDINGS_NUDGE.includes("clodiff viewer"), "findings nudge points at the viewer")
+
+if (contentFails.length) {
+  console.log("\nCONTENT FAILURES:")
+  for (const c of contentFails) console.log("  " + c)
+  process.exit(1)
+}
+console.log(`nudge-content : ${6}/6`)
+
 console.log("\nALL PASS")

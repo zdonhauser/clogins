@@ -287,6 +287,14 @@ After the summary, start a persistent monitor on the session's `replies.json` (i
 dir — see Step 1) using the `Monitor` tool so you can answer replies in the viewer without
 the user sending a new chat message.
 
+> **This watcher isn't exclusive to this skill.** Whenever a clodiff session is live, the
+> `nudge-review` hook injects a one-time reminder (on the first prompt after clodiff starts)
+> to start exactly this watcher — so proactive replies work no matter how the review was
+> launched (review-team, ultrareview, a custom pipeline, or just running clodiff directly).
+> The user can also start it on demand with the **`/clodiff-watch`** command. Whichever path
+> triggers it, start only **one** watcher per session. If none is running, replies still
+> surface on the user's next message via the `inject-replies` hook — just not proactively.
+
 ```bash
 node -e "
 const fs = require('fs');
