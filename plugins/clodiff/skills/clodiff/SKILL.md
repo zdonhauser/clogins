@@ -21,8 +21,14 @@ Check whether clodiff is running by looking for `session.json` in that directory
 if absent:
 
 ```bash
-# Ensure clodiff is installed (Node >=20.11)
-which clodiff >/dev/null 2>&1 || npm install -g clodiff
+# Ensure clodiff is installed AND on the latest version (Node >=20.11).
+# Best-effort: skips silently when offline.
+if which clodiff >/dev/null 2>&1; then
+  LATEST=$(npm view clodiff version 2>/dev/null); CURRENT=$(clodiff --version 2>/dev/null)
+  [ -n "$LATEST" ] && [ "$CURRENT" != "$LATEST" ] && npm install -g clodiff@latest >/dev/null 2>&1 || true
+else
+  npm install -g clodiff
+fi
 
 # Start clodiff from the repo root (pick the right mode)
 clodiff                              # DEFAULT: uncommitted changes vs the last commit

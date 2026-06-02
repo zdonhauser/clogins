@@ -47,15 +47,36 @@ clodiff keeps its state under the repo's git dir (`<git-dir>/clodiff/`, e.g.
 Resolve it once and reuse it.
 
 ```bash
-SESSION="$(git rev-parse --absolute-git-dir 2>/dev/null)/clodiff/session.json"
+GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)"
+SESSION="$GITDIR/clodiff/session.json"
+LOG="$GITDIR/clodiff/clodiff.log"
 
-# Already running? Reuse the live session.
+# Is a clodiff actually LIVE for this repo? Probe the recorded port — don't trust
+# the session file alone: it persists after `clodiff --stop` / a crash, so its
+# mere existence doesn't mean a server is up.
+LIVE=0
 if [ -f "$SESSION" ]; then
-  echo "clodiff already running"
+  PORT=$(node -e "try{process.stdout.write(String(require('$SESSION').port||''))}catch{}" 2>/dev/null)
+  if [ -n "$PORT" ] && node -e "fetch('http://localhost:$PORT/session',{signal:AbortSignal.timeout(800)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null; then
+    LIVE=1
+  fi
+fi
+
+if [ "$LIVE" = "1" ]; then
+  echo "clodiff already running on port $PORT"
 else
-  # Ensure clodiff is installed (Node >=20.11). Install globally and run the
-  # `clodiff` binary.
-  which clodiff >/dev/null 2>&1 || npm install -g clodiff
+  # Ensure clodiff is installed AND on the latest published version before
+  # launching (best-effort: skips silently when offline or npm view fails).
+  if which clodiff >/dev/null 2>&1; then
+    LATEST=$(npm view clodiff version 2>/dev/null)
+    CURRENT=$(clodiff --version 2>/dev/null)
+    if [ -n "$LATEST" ] && [ "$CURRENT" != "$LATEST" ]; then
+      echo "clodiff: updating $CURRENT -> $LATEST"
+      npm install -g clodiff@latest >/dev/null 2>&1 || true
+    fi
+  else
+    npm install -g clodiff
+  fi
   if ! which clodiff >/dev/null 2>&1; then
     echo "clodiff isn't installed and 'npm install -g clodiff' didn't put it on PATH."
     echo "Install Node >=20.11 (https://nodejs.org), then: npm install -g clodiff"
@@ -65,7 +86,6 @@ else
   # clodiff self-daemonizes: the command returns immediately and the server runs
   # detached in its own session, so it SURVIVES this Claude session ending — no
   # nohup/& needed, and no shared log. It logs to <git-dir>/clodiff/clodiff.log.
-  LOG="$(git rev-parse --absolute-git-dir 2>/dev/null)/clodiff/clodiff.log"
 
   # One question decides the mode: does the current branch have an open PR?
   if gh pr view --json number >/dev/null 2>&1; then
@@ -83,13 +103,19 @@ else
     clodiff --base "$DEFAULT_BRANCH"
   fi
 
-  # Wait up to 20s for the daemon to write its session file
+  # Wait up to 20s for the new daemon to come UP — probe liveness, not just file
+  # existence: an old session.json may still hold a stale/dead port until the
+  # fresh daemon overwrites it.
+  UP=0
   for i in $(seq 1 40); do
     sleep 0.5
-    [ -f "$SESSION" ] && break
+    PORT=$(node -e "try{process.stdout.write(String(require('$SESSION').port||''))}catch{}" 2>/dev/null)
+    if [ -n "$PORT" ] && node -e "fetch('http://localhost:$PORT/session',{signal:AbortSignal.timeout(800)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null; then
+      UP=1; break
+    fi
   done
 
-  if [ ! -f "$SESSION" ]; then
+  if [ "$UP" != "1" ]; then
     echo "clodiff failed to start. Check $LOG"
     exit 1
   fi
