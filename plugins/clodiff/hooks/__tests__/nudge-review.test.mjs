@@ -47,12 +47,15 @@ must(monitor.includes("replies.json"), "monitor nudge points at replies.json")
 must(monitor.includes("/reply"), "monitor nudge explains how to respond (/reply)")
 must(monitor.includes("one"), "monitor nudge warns about a single watcher")
 must(FINDINGS_NUDGE.includes("clodiff viewer"), "findings nudge points at the viewer")
+must(/clodiff-review skill/.test(FINDINGS_NUDGE), "findings nudge routes to the adapter skill")
+must(/do not|don't|preserve/i.test(FINDINGS_NUDGE), "findings nudge says don't override the engine")
+must(/review-team/.test(FINDINGS_NUDGE), "findings nudge names other engines (e.g. review-team)")
 
 if (contentFails.length) {
   console.log("\nCONTENT FAILURES:")
   for (const c of contentFails) console.log("  " + c)
   process.exit(1)
 }
-console.log(`nudge-content : ${6}/6`)
+console.log(`nudge-content : 9/9`)
 
 console.log("\nALL PASS")

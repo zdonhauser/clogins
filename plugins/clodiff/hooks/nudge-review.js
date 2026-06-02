@@ -52,14 +52,22 @@ export function isReviewIntent(prompt) {
   return REVIEW_PATTERNS.some((re) => re.test(p))
 }
 
-// The findings nudge — keep review output on the viewer surface, whatever
-// engine (your own pass, ultrareview, a linter, review-team) produced it.
+// The findings nudge — funnel review output onto the viewer surface as
+// annotations, whatever engine (your own pass, ultrareview, a linter,
+// review-team) produced it. This is the *adapter* contract: clodiff is the UI
+// for whatever review is running, so the findings belong on the code as
+// comments, not in a chat list.
 export const FINDINGS_NUDGE =
-  "[clodiff] A clodiff review session is active on this repo. " +
-  "If you produce review findings — your own, or from another review tool or skill that runs — " +
-  "render them as inline annotations in the clodiff viewer (see the clodiff-review skill) " +
-  "rather than only describing them in chat. The viewer is the user's review surface; " +
-  "put findings where the code is.\n"
+  "[clodiff] A clodiff review session is live on this repo, and clodiff is the UI for " +
+  "whatever review is running here. When this review produces findings — your own pass, or " +
+  "another engine/skill the user invoked (review-team, ultrareview, a linter, a scanner) — " +
+  "your deliverable is to render each finding as an inline annotation in the clodiff viewer, " +
+  "pinned to its line. That is the expected output surface; a chat-only summary is not " +
+  "enough. Do NOT re-do or override the other engine's analysis — let it run and judge — " +
+  "just route each of its findings onto the matching line as a clodiff comment (preserve its " +
+  "file, line, message, and severity). If you don't already have the mechanism in context, " +
+  "invoke the clodiff-review skill — its 'Routing another engine's findings' section is the " +
+  "adapter (the annotate() helper + scroll_to broadcast). Put findings where the code is.\n"
 
 // One-line watcher Claude can hand straight to the Monitor tool. Tails
 // replies.json and emits each new reply as a JSON line.
