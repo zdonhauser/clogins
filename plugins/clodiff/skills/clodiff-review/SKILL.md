@@ -108,6 +108,18 @@ const isPRReview = session.pr_number != null
 - **Local mode** — annotations are working-tree feedback; Fix It / Reject apply changes
   directly. No GitHub submit unless the user explicitly wants one.
 
+> **The user can change the diff range/mode from inside the viewer — you don't need to
+> relaunch.** The header's base/compare pickers open a searchable dropdown grouped into
+> *recent commits* (with messages + dates), *local branches*, and *remote branches* (so
+> e.g. `main` and `origin/main` are both selectable). The Settings (gear) popover has a
+> **Diff mode** section that switches between *uncommitted changes*, *vs `<default>`*,
+> *vs `origin/<default>`*, *last commit*, and *PR review* in one click — including
+> entering PR mode on demand. If the user says "compare against origin/main instead" or
+> "switch to PR review," point them at these controls rather than killing and relaunching
+> clodiff; the viewer hot-reloads the diff and updates the session in place. After a mode
+> change, re-read `session.json` before submitting, since `head_commit`/`pr_number` may
+> have changed.
+
 ---
 
 ## Step 2: Get findings onto the surface
