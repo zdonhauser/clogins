@@ -125,6 +125,13 @@ fi
 > The server keeps running after this session ends — that's intentional, so the
 > viewer stays live when you come back. To shut it down, run **`clodiff --stop`**
 > in the repo (the review state is kept, so you can resume later).
+>
+> **It does self-terminate after ~3h idle** (no viewer + no API activity), or if
+> the worktree is removed. So if a clodiff HTTP call ever fails with a connection
+> error mid-session, the daemon has likely idle-exited — **just re-run the
+> bootstrap above to relaunch it.** `session.json` persists, so the relaunch
+> resumes the same review (annotations and all); then retry your request. The
+> liveness probe in the bootstrap already handles this on the next invocation.
 
 Read the session and note the mode — it changes how findings get submitted at the end:
 

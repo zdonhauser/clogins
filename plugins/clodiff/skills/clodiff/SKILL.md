@@ -52,6 +52,12 @@ file to get the port before making any API calls. To shut a server down, run
 `clodiff --stop` in the repo (the review state is kept for resuming). It logs to
 `<git-dir>/clodiff/clodiff.log`.
 
+The daemon **self-terminates after ~3h idle** (no viewer + no API activity) or if the
+worktree is removed — so if a clodiff request ever fails to connect, it has likely
+idle-exited; just run `clodiff` again to relaunch and resume from the saved session
+(check `clodiff --status` to see if one is live). Always confirm a server is actually
+responding (not just that `session.json` exists) before relying on it.
+
 **Hot reload — don't relaunch to refresh.** A running clodiff watches the working tree
 (and HEAD) and pushes the updated diff to the open viewer automatically whenever you edit
 files or commit. So after you make changes, do **nothing** — the tab already shows them.
