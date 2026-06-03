@@ -1,5 +1,5 @@
 {
-  "description": "clodiff session hooks — inject annotation replies, nudge review findings into the viewer, and load session state",
+  "description": "clodiff session hooks — inject annotation replies, nudge review findings into the viewer, load session state, and stop idle daemons on session end",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -13,6 +13,13 @@
       {
         "hooks": [
           { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-session.js\"", "timeout": 10 }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-on-session-end.js\"", "timeout": 10 }
         ]
       }
     ]
